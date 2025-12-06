@@ -5,6 +5,7 @@ protocol KeyboardViewDelegate: AnyObject {
     func deleteBackward()
     func insertReturn()
     func switchToNextInputMode()
+    func moveCursor(offset: Int)
 }
 
 class KeyboardView: UIView {
@@ -35,6 +36,8 @@ class KeyboardView: UIView {
     private var bottomActionSection: UIStackView!
     private var spaceButton: UIButton?
     private var returnButton: UIButton?
+    private var leftArrowButton: UIButton?
+    private var rightArrowButton: UIButton?
     
     // Key layout definitions - lowercase by default
     private let alphabetKeys = [
@@ -47,7 +50,7 @@ class KeyboardView: UIView {
     private let numberSymbolKeys = [
         ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
         ["+", "-", "*", "/", "=", "<", ">", "!", "&", "|"],
-        ["(", ")", "[", "]", "{", "}", "'", "\"", ";", ":"]
+        ["(", ")", "[", "]", "{", "}", "'", "\"", ":", "."]
     ]
     
     
@@ -184,20 +187,42 @@ class KeyboardView: UIView {
         
         bottomActionSection = UIStackView()
         bottomActionSection.axis = .horizontal
-        bottomActionSection.distribution = .fillEqually
+        bottomActionSection.distribution = .fillProportionally
         bottomActionSection.spacing = 6
         
-        // Create space button - NEVER recreated
+        // Calculate proportionate widths: 3 parts total (Space: 1, Arrows: 1, Return: 1)
+        // But implementation uses fillProportionally, so we use width constraints or allow natural compression
+        
+        // 1. Space Button (Approx 1/3)
         spaceButton = createStandardButton(text: "space", color: getCurrentColors().special, action: #selector(spacePressed))
         spaceButton?.titleLabel?.font = UIFont.systemFont(ofSize: 16)
-        bottomActionSection.addArrangedSubview(spaceButton!)
         
-        // Create return button - NEVER recreated
+        // 2. Cursor Keys Container (Approx 1/3)
+        let cursorStack = UIStackView()
+        cursorStack.axis = .horizontal
+        cursorStack.distribution = .fillEqually
+        cursorStack.spacing = 6
+        
+        leftArrowButton = createStandardButton(text: "<", color: getCurrentColors().special, action: #selector(cursorLeftPressed))
+        rightArrowButton = createStandardButton(text: ">", color: getCurrentColors().special, action: #selector(cursorRightPressed))
+        
+        cursorStack.addArrangedSubview(leftArrowButton!)
+        cursorStack.addArrangedSubview(rightArrowButton!)
+        
+        // 3. Return Button (Approx 1/3)
         returnButton = createStandardButton(text: "return", color: getCurrentColors().special, action: #selector(returnPressed))
         returnButton?.titleLabel?.font = UIFont.systemFont(ofSize: 16)
+        
+        // Add to main bottom section
+        bottomActionSection.addArrangedSubview(spaceButton!)
+        bottomActionSection.addArrangedSubview(cursorStack)
         bottomActionSection.addArrangedSubview(returnButton!)
         
-        // Set proper height constraint for bottom row to match other keyboard rows
+        // Set equal width constraints to ensure they share width equally
+        cursorStack.widthAnchor.constraint(equalTo: spaceButton!.widthAnchor).isActive = true
+        returnButton!.widthAnchor.constraint(equalTo: spaceButton!.widthAnchor).isActive = true
+        
+        // Set proper height constraint for bottom row
         bottomActionSection.heightAnchor.constraint(equalToConstant: 48).isActive = true
         
         stackView.addArrangedSubview(bottomActionSection)
@@ -212,7 +237,7 @@ class KeyboardView: UIView {
             return colors.bracket
         case "+", "-", "*", "/", "=", "<", ">", "!":
             return colors.operator
-        case "\"", "'":
+        case "\"", "'", ".":
             return colors.quote
         case "&", "|", ";", ":":
             return colors.punctuation
@@ -320,6 +345,16 @@ class KeyboardView: UIView {
         delegate.insertReturn()
     }
     
+    @objc private func cursorLeftPressed() {
+        guard isKeyboardReady() else { return }
+        delegate?.moveCursor(offset: -1)
+    }
+    
+    @objc private func cursorRightPressed() {
+        guard isKeyboardReady() else { return }
+        delegate?.moveCursor(offset: 1)
+    }
+    
     
     // MARK: - Button State Management
     
@@ -351,6 +386,12 @@ class KeyboardView: UIView {
         // Update bottom action buttons
         spaceButton?.isEnabled = enabled
         spaceButton?.alpha = enabled ? 1.0 : 0.6
+        
+        leftArrowButton?.isEnabled = enabled
+        leftArrowButton?.alpha = enabled ? 1.0 : 0.6
+        
+        rightArrowButton?.isEnabled = enabled
+        rightArrowButton?.alpha = enabled ? 1.0 : 0.6
         
         returnButton?.isEnabled = enabled
         returnButton?.alpha = enabled ? 1.0 : 0.6
@@ -497,6 +538,8 @@ class KeyboardView: UIView {
             shiftButton?.backgroundColor = isShiftActive ? colors.shiftActive : colors.special
             backspaceButton?.backgroundColor = colors.special
             spaceButton?.backgroundColor = colors.special
+            leftArrowButton?.backgroundColor = colors.special
+            rightArrowButton?.backgroundColor = colors.special
             returnButton?.backgroundColor = colors.special
             
             CATransaction.commit()

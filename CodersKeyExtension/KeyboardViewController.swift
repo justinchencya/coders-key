@@ -162,4 +162,9 @@ extension KeyboardViewController: KeyboardViewDelegate {
     func switchToNextInputMode() {
         super.advanceToNextInputMode()
     }
+    
+    func moveCursor(offset: Int) {
+        guard isKeyboardReady else { return }
+        textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+    }
 }
