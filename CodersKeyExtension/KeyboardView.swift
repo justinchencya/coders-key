@@ -39,6 +39,11 @@ class KeyboardView: UIView {
     private var leftArrowButton: UIButton?
     private var rightArrowButton: UIButton?
     
+    // Long Press State
+    private var activePopupView: UIView?
+    private var popupButtons: [UIButton] = []
+    private let dotAlternatives = [";", ","]
+    
     // Key layout definitions - lowercase by default
     private let alphabetKeys = [
         ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
@@ -125,6 +130,11 @@ class KeyboardView: UIView {
             for key in row {
                 let color = getColorForNumberSymbolKey(key)
                 let button = createStandardButton(text: key, color: color, action: #selector(programmerKeyPressed(_:)))
+                
+                if key == "." {
+                    setupLongPress(for: button)
+                }
+                
                 buttonRow.append(button)
                 rowStack.addArrangedSubview(button)
             }
@@ -283,6 +293,148 @@ class KeyboardView: UIView {
         return spacer
     }
     
+    // MARK: - Long Press Handling
+    
+    private func setupLongPress(for button: UIButton) {
+        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
+        longPress.minimumPressDuration = 0.3
+        button.addGestureRecognizer(longPress)
+    }
+    
+    @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+        // Find which button triggered this
+        guard let sourceButton = gesture.view as? UIButton else { return }
+        
+        switch gesture.state {
+        case .began:
+            showPopup(for: sourceButton, alternatives: dotAlternatives)
+            // Initial feedback
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.impactOccurred()
+            
+        case .changed:
+            let location = gesture.location(in: activePopupView)
+            updatePopupSelection(at: location)
+            
+        case .ended:
+            let location = gesture.location(in: activePopupView)
+            if let selectedText = getSelectedAlternative(at: location) {
+                delegate?.insertText(selectedText)
+            }
+            dismissPopup()
+            
+        case .cancelled, .failed:
+            dismissPopup()
+            
+        default:
+            break
+        }
+    }
+    
+    private func showPopup(for sourceButton: UIButton, alternatives: [String]) {
+        // Remove any existing popup
+        dismissPopup()
+        
+        // Convert source button frame to our coordinate space
+        let sourceFrame = sourceButton.convert(sourceButton.bounds, to: self)
+        
+        // Create container view
+        let container = UIView()
+        container.backgroundColor = getCurrentColors().special
+        container.layer.cornerRadius = 8
+        container.layer.shadowColor = UIColor.black.cgColor
+        container.layer.shadowOpacity = 0.3
+        container.layer.shadowOffset = CGSize(width: 0, height: 2)
+        container.layer.shadowRadius = 4
+        
+        // Create stack for alternatives
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.distribution = .fillEqually
+        stack.spacing = 1
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        
+        popupButtons = []
+        
+        for alt in alternatives {
+            let btn = UIButton(type: .system)
+            btn.setTitle(alt, for: .normal)
+            btn.titleLabel?.font = UIFont.systemFont(ofSize: 24)
+            btn.setTitleColor(.label, for: .normal)
+            btn.backgroundColor = .clear // Let container color show
+            popupButtons.append(btn)
+            stack.addArrangedSubview(btn)
+        }
+        
+        container.addSubview(stack)
+        
+        // Size calculations
+        let buttonWidth: CGFloat = 44
+        let totalWidth = buttonWidth * CGFloat(alternatives.count) + CGFloat(alternatives.count - 1) // + spacing
+        let height: CGFloat = 54
+        
+        // Calculate X position centered on key, but clamped to view bounds
+        var x = sourceFrame.midX - (totalWidth / 2)
+        
+        // Ensure within bounds with some padding
+        let padding: CGFloat = 5
+        let rightEdge = self.bounds.width - padding
+        
+        if x + totalWidth > rightEdge {
+            x = rightEdge - totalWidth
+        }
+        if x < padding {
+            x = padding
+        }
+        
+        container.frame = CGRect(
+            x: x,
+            y: sourceFrame.minY - height - 10,
+            width: totalWidth,
+            height: height
+        )
+        
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: container.topAnchor),
+            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: container.trailingAnchor)
+        ])
+        
+        // Add a small pointer triangle at the bottom? (Optional, skipping for simplicity/robustness first)
+        
+        addSubview(container)
+        activePopupView = container
+    }
+    
+    private func updatePopupSelection(at point: CGPoint) {
+        // Reset all backgrounds
+        for btn in popupButtons {
+            if btn.frame.contains(point) {
+                btn.backgroundColor = .systemBlue
+                btn.setTitleColor(.white, for: .normal)
+            } else {
+                btn.backgroundColor = .clear
+                btn.setTitleColor(.label, for: .normal)
+            }
+        }
+    }
+    
+    private func getSelectedAlternative(at point: CGPoint) -> String? {
+        for btn in popupButtons {
+            if btn.frame.contains(point) {
+                return btn.currentTitle
+            }
+        }
+        return nil
+    }
+    
+    private func dismissPopup() {
+        activePopupView?.removeFromSuperview()
+        activePopupView = nil
+        popupButtons = []
+    }
+
     // MARK: - Button Action Methods (Separated by Section)
     
     @objc private func programmerKeyPressed(_ sender: UIButton) {
