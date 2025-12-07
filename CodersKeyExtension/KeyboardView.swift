@@ -247,8 +247,10 @@ class KeyboardView: UIView {
             return colors.bracket
         case "+", "-", "*", "/", "=", "<", ">", "!":
             return colors.operator
-        case "\"", "'", ".":
+        case "\"", "'":
             return colors.quote
+        case ".":
+            return colors.dotKey
         case "&", "|", ";", ":":
             return colors.punctuation
         case "_":
@@ -340,7 +342,7 @@ class KeyboardView: UIView {
         
         // Create container view
         let container = UIView()
-        container.backgroundColor = getCurrentColors().special
+        container.backgroundColor = sourceButton.backgroundColor ?? getCurrentColors().special
         container.layer.cornerRadius = 8
         container.layer.shadowColor = UIColor.black.cgColor
         container.layer.shadowOpacity = 0.3
@@ -709,6 +711,7 @@ private struct KeyColors {
     let punctuation: UIColor
     let quote: UIColor
     let underscore: UIColor
+    let dotKey: UIColor
     let special: UIColor
     let shiftActive: UIColor
     
@@ -721,6 +724,7 @@ private struct KeyColors {
             punctuation = .systemPurple
             quote = .systemYellow
             underscore = .systemGreen
+            dotKey = .systemTeal
             special = .systemGray5
             shiftActive = .systemBlue
         } else {
@@ -731,6 +735,7 @@ private struct KeyColors {
             punctuation = .systemPurple
             quote = .systemYellow
             underscore = .systemGreen
+            dotKey = .systemTeal
             special = .systemGray3
             shiftActive = .systemBlue
         }
