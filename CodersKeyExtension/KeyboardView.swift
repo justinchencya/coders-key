@@ -6,6 +6,7 @@ protocol KeyboardViewDelegate: AnyObject {
     func insertReturn()
     func switchToNextInputMode()
     func moveCursor(offset: Int)
+    func dismissKeyboard()
 }
 
 class KeyboardView: UIView {
@@ -38,6 +39,11 @@ class KeyboardView: UIView {
     private var returnButton: UIButton?
     private var leftArrowButton: UIButton?
     private var rightArrowButton: UIButton?
+    private var globeButton: UIButton?
+    private var hideKeyboardButton: UIButton?
+    
+    // Configuration
+    private let needsGlobeKey: Bool
     
     // Long Press State
     private var activePopupView: UIView?
@@ -59,8 +65,9 @@ class KeyboardView: UIView {
     ]
     
     
-    init(keyboardViewController: KeyboardViewController) {
+    init(keyboardViewController: KeyboardViewController, needsGlobeKey: Bool) {
         self.keyboardViewController = keyboardViewController
+        self.needsGlobeKey = needsGlobeKey
         // Initialize colors with a default value first, then update after super.init
         self.colors = KeyColors(userInterfaceStyle: .light)
         super.init(frame: .zero)
@@ -85,10 +92,10 @@ class KeyboardView: UIView {
         addSubview(stackView)
         
         NSLayoutConstraint.activate([
-            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 5),
-            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -5),
-            stackView.topAnchor.constraint(equalTo: topAnchor, constant: 8),
-            stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8)
+            stackView.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 5),
+            stackView.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor, constant: -5),
+            stackView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 8),
+            stackView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -8)
         ])
         
         // Set a minimum height to ensure consistent sizing
@@ -177,8 +184,10 @@ class KeyboardView: UIView {
                 rowStack.addArrangedSubview(button)
             }
             
-            // Add backspace to the third alphabet row
-            if rowIndex == 2 {
+            // Add right-side elements for appropriate rows
+            if rowIndex == 1 { // Second row (a-l) - add right spacer to center the row
+                rowStack.addArrangedSubview(createSpacer(width: 20))
+            } else if rowIndex == 2 { // Third row (z-m)
                 backspaceButton = createStandardButton(text: "⌫", color: getCurrentColors().special, action: #selector(backspacePressed))
                 backspaceButton?.titleLabel?.font = UIFont.systemFont(ofSize: 22)
                 backspaceButton?.widthAnchor.constraint(greaterThanOrEqualToConstant: 60).isActive = true
@@ -200,14 +209,31 @@ class KeyboardView: UIView {
         bottomActionSection.distribution = .fillProportionally
         bottomActionSection.spacing = 6
         
-        // Calculate proportionate widths: 3 parts total (Space: 1, Arrows: 1, Return: 1)
-        // But implementation uses fillProportionally, so we use width constraints or allow natural compression
+        // 1. Globe Button (Optional)
+        if needsGlobeKey {
+            // Use empty text, we'll use an SF Symbol image
+            globeButton = createStandardButton(text: "", color: getCurrentColors().special, action: #selector(globeKeyPressed))
+            
+            // Use SF Symbol which respects tintColor (unlike the emoji 🌐)
+            if let globeImage = UIImage(systemName: "globe") {
+                globeButton?.setImage(globeImage, for: .normal)
+                // Match the size and weight of other text labels approximately
+                let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .light)
+                globeButton?.setPreferredSymbolConfiguration(config, forImageIn: .normal)
+            }
+            
+            globeButton?.tintColor = .label // Matches the standard text color
+            bottomActionSection.addArrangedSubview(globeButton!)
+            
+            // Constraint for globe button width - make it square-ish or slightly wider
+            globeButton?.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        }
         
-        // 1. Space Button (Approx 1/3)
+        // 2. Space Button
         spaceButton = createStandardButton(text: "space", color: getCurrentColors().special, action: #selector(spacePressed))
         spaceButton?.titleLabel?.font = UIFont.systemFont(ofSize: 16)
         
-        // 2. Cursor Keys Container (Approx 1/3)
+        // 3. Cursor Keys Container
         let cursorStack = UIStackView()
         cursorStack.axis = .horizontal
         cursorStack.distribution = .fillEqually
@@ -219,18 +245,38 @@ class KeyboardView: UIView {
         cursorStack.addArrangedSubview(leftArrowButton!)
         cursorStack.addArrangedSubview(rightArrowButton!)
         
-        // 3. Return Button (Approx 1/3)
+        // 4. Return Button
         returnButton = createStandardButton(text: "return", color: getCurrentColors().special, action: #selector(returnPressed))
         returnButton?.titleLabel?.font = UIFont.systemFont(ofSize: 16)
         
-        // Add to main bottom section
+        // 5. Hide Keyboard Button (Conditional, Right of Return)
+        if needsGlobeKey { // Reusing same condition as user requested
+             // Use empty text, we'll use an SF Symbol image
+            hideKeyboardButton = createStandardButton(text: "", color: getCurrentColors().special, action: #selector(hideKeyboardPressed))
+            
+            if let hideImage = UIImage(systemName: "keyboard.chevron.compact.down") {
+                hideKeyboardButton?.setImage(hideImage, for: .normal)
+                let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .light)
+                hideKeyboardButton?.setPreferredSymbolConfiguration(config, forImageIn: .normal)
+            }
+            hideKeyboardButton?.tintColor = .label
+            
+             // Apply width constraint
+            hideKeyboardButton?.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        }
+
+        // Add all to main bottom section
         bottomActionSection.addArrangedSubview(spaceButton!)
         bottomActionSection.addArrangedSubview(cursorStack)
         bottomActionSection.addArrangedSubview(returnButton!)
         
-        // Set equal width constraints to ensure they share width equally
-        cursorStack.widthAnchor.constraint(equalTo: spaceButton!.widthAnchor).isActive = true
-        returnButton!.widthAnchor.constraint(equalTo: spaceButton!.widthAnchor).isActive = true
+        if let hideBtn = hideKeyboardButton {
+            bottomActionSection.addArrangedSubview(hideBtn)
+        }
+        
+        // Set constraints - ensure Space, Return, and CursorStack have equal widths (1:1:1 ratio)
+        spaceButton?.widthAnchor.constraint(equalTo: returnButton!.widthAnchor).isActive = true
+        cursorStack.widthAnchor.constraint(equalTo: returnButton!.widthAnchor).isActive = true
         
         // Set proper height constraint for bottom row
         bottomActionSection.heightAnchor.constraint(equalToConstant: 48).isActive = true
@@ -253,8 +299,6 @@ class KeyboardView: UIView {
             return colors.dotKey
         case "&", "|", ";", ":":
             return colors.punctuation
-        case "_":
-            return colors.underscore
         default:
             return colors.punctuation
         }
@@ -499,6 +543,16 @@ class KeyboardView: UIView {
         delegate.insertReturn()
     }
     
+    @objc private func globeKeyPressed() {
+        guard let delegate = delegate else { return }
+        delegate.switchToNextInputMode()
+    }
+    
+    @objc private func hideKeyboardPressed() {
+        guard let delegate = delegate else { return }
+        delegate.dismissKeyboard()
+    }
+    
     @objc private func cursorLeftPressed() {
         guard isKeyboardReady() else { return }
         delegate?.moveCursor(offset: -1)
@@ -546,6 +600,12 @@ class KeyboardView: UIView {
         
         rightArrowButton?.isEnabled = enabled
         rightArrowButton?.alpha = enabled ? 1.0 : 0.6
+        
+        globeButton?.isEnabled = enabled
+        globeButton?.alpha = enabled ? 1.0 : 0.6
+        
+        hideKeyboardButton?.isEnabled = enabled
+        hideKeyboardButton?.alpha = enabled ? 1.0 : 0.6
         
         returnButton?.isEnabled = enabled
         returnButton?.alpha = enabled ? 1.0 : 0.6
@@ -627,11 +687,6 @@ class KeyboardView: UIView {
         }
     }
     
-    // MARK: - Visual Feedback (Using Built-in UIButton Behavior)
-    // Removed custom touch event handlers - using built-in button visual feedback
-    
-    
-    
     private func registerForTraitChangeNotifications() {
         // Use modern trait change registration on iOS 17+, fallback to traitCollectionDidChange on older versions
         if #available(iOS 17.0, *) {
@@ -654,10 +709,6 @@ class KeyboardView: UIView {
         if traitCollection.userInterfaceStyle != previousTraitCollection?.userInterfaceStyle {
             updateKeyboardColorsForCurrentAppearance()
         }
-    }
-    
-    private func updateColorsForCurrentTraitCollection() {
-        colors = KeyColors(userInterfaceStyle: traitCollection.userInterfaceStyle)
     }
     
     private func updateKeyboardColorsForCurrentAppearance() {
@@ -695,6 +746,8 @@ class KeyboardView: UIView {
             leftArrowButton?.backgroundColor = colors.special
             rightArrowButton?.backgroundColor = colors.special
             returnButton?.backgroundColor = colors.special
+            globeButton?.backgroundColor = colors.special
+            hideKeyboardButton?.backgroundColor = colors.special
             
             CATransaction.commit()
         }
@@ -710,7 +763,6 @@ private struct KeyColors {
     let bracket: UIColor
     let punctuation: UIColor
     let quote: UIColor
-    let underscore: UIColor
     let dotKey: UIColor
     let special: UIColor
     let shiftActive: UIColor
@@ -723,7 +775,6 @@ private struct KeyColors {
             bracket = .systemBlue
             punctuation = .systemPurple
             quote = .systemYellow
-            underscore = .systemGreen
             dotKey = .systemTeal
             special = .systemGray5
             shiftActive = .systemBlue
@@ -734,7 +785,6 @@ private struct KeyColors {
             bracket = .systemBlue
             punctuation = .systemPurple
             quote = .systemYellow
-            underscore = .systemGreen
             dotKey = .systemTeal
             special = .systemGray3
             shiftActive = .systemBlue

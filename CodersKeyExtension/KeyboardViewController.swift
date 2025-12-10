@@ -6,8 +6,6 @@ class KeyboardViewController: UIInputViewController {
     private var isKeyboardReady = false
     private var isInitialized = false
     
-
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupKeyboardView()
@@ -26,6 +24,10 @@ class KeyboardViewController: UIInputViewController {
             isInitialized = true
             isKeyboardReady = true
         }
+        
+        // Force layout pass to ensure safe area insets are calculated before visibility to prevent flashing
+        self.view.layoutIfNeeded()
+        
         // No additional state changes to prevent flashing
     }
     
@@ -48,16 +50,17 @@ class KeyboardViewController: UIInputViewController {
         guard keyboardView == nil else { return }
         
         // Create keyboard view without forcing layout operations
-        keyboardView = KeyboardView(keyboardViewController: self)
+        keyboardView = KeyboardView(keyboardViewController: self, needsGlobeKey: self.needsInputModeSwitchKey)
         view.addSubview(keyboardView)
         keyboardView.translatesAutoresizingMaskIntoConstraints = false
         
-        // Set up constraints to fill the entire view
+        // Set up constraints to fill the view, respecting safe area to avoid system bar overlap
         NSLayoutConstraint.activate([
             keyboardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             keyboardView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             keyboardView.topAnchor.constraint(equalTo: view.topAnchor),
-            keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            keyboardView.heightAnchor.constraint(equalToConstant: 310)
         ])
         
         // Let the system handle layout naturally - no forced layout calls
@@ -116,13 +119,8 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - Trait Collection Handling
     
     private func registerForTraitChanges() {
-        if #available(iOS 17.0, *) {
-            // Use modern trait change registration APIs
-            registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: KeyboardViewController, previousTraitCollection: UITraitCollection) in
-                // The KeyboardView will handle its own color updates via modern trait change APIs
-                // No additional action needed here - the KeyboardView has its own trait change registration
-            }
-        }
+        // KeyboardView handles its own trait change registration
+        // No action needed here
     }
     
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -132,13 +130,7 @@ class KeyboardViewController: UIInputViewController {
         } else {
             super.traitCollectionDidChange(previousTraitCollection)
         }
-        
-        // If the keyboard view exists and the user interface style changed,
-        // ensure it's properly updated (for iOS 16 and below)
-        if keyboardView != nil && traitCollection.userInterfaceStyle != previousTraitCollection?.userInterfaceStyle {
-            // The KeyboardView will handle its own color updates via traitCollectionDidChange
-            // No additional action needed here
-        }
+        // KeyboardView handles its own color updates via traitCollectionDidChange
     }
 }
 
@@ -166,5 +158,9 @@ extension KeyboardViewController: KeyboardViewDelegate {
     func moveCursor(offset: Int) {
         guard isKeyboardReady else { return }
         textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+    }
+    
+    override func dismissKeyboard() {
+        super.dismissKeyboard()
     }
 }

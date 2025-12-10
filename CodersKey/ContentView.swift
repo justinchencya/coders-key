@@ -15,68 +15,58 @@ struct ContentView: View {
                 Color(UIColor.systemGroupedBackground)
                     .edgesIgnoringSafeArea(.all)
                 
-                ScrollView {
-                    VStack(spacing: 32) {
-                        // Header Section
-                        VStack(spacing: 16) {
-                            Image("app_logo")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 80, height: 80)
-                                .cornerRadius(20)
-                                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-                            
-                            VStack(spacing: 8) {
-                                Text("CodersKey")
-                                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                                    .foregroundColor(.primary)
-                                
-                                Text("© 2025 nerdyStuff")
-                                    .font(.system(size: 14, design: .rounded))
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Text("A powerful keyboard extension designed specifically for programmers.")
-                                .font(.system(size: 17, design: .rounded))
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                                .padding(.top, 8)
-                        }
-                        .padding(.top, 20)
+                VStack(spacing: 24) {
+                    // Header Section
+                    VStack(spacing: 12) {
+                        Image("app_logo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 80, height: 80)
+                            .cornerRadius(20)
+                            .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
                         
-                        // Instructions Card
-                        VStack(alignment: .leading, spacing: 20) {
-                            Text("How to Use")
-                                .font(.system(size: 20, weight: .bold, design: .rounded))
+                        VStack(spacing: 6) {
+                            Text("CodersKey")
+                                .font(.system(size: 28, weight: .bold, design: .rounded))
                                 .foregroundColor(.primary)
-                                .padding(.bottom, 4)
                             
-                            VStack(spacing: 24) {
-                                InstructionStep(number: "1", text: "Go to Settings > General > Keyboard > Keyboards")
-                                InstructionStep(number: "2", text: "Tap 'Add New Keyboard' and select 'CodersKey'")
-                                InstructionStep(number: "3", text: "Tap on 'CodersKey' and enable 'Allow Full Access'")
-                                InstructionStep(number: "4", text: "Switch to the keyboard by tapping the globe icon")
-                                InstructionStep(number: "5", text: "Long press the last key on the third row (.) to select other keys (; or ,)")
-                            }
+                            Text("© 2025 nerdyStuff")
+                                .font(.system(size: 14, design: .rounded))
+                                .foregroundColor(.secondary)
                         }
-                        .padding(24)
-                        .background(Color(UIColor.secondarySystemGroupedBackground))
-                        .cornerRadius(24)
-                        .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 5)
-                        .padding(.horizontal)
-                        
-                        // Action Links
-                        VStack(spacing: 16) {
-                            MenuLink(title: "About Us", url: "https://www.nerdystuff.xyz")
-                            MenuLink(title: "Contact", url: "https://www.nerdystuff.xyz/pages/contact-us")
-                        }
-                        .padding(.horizontal)
-                        
-                        Spacer(minLength: 40)
                     }
-                    .frame(maxWidth: 500) // Constrain width for larger screens
+                    .padding(.top, 16)
+                    
+                    // Instructions Card
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("How to Use")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
+                            .padding(.bottom, 4)
+                        
+                        VStack(spacing: 16) {
+                            InstructionStep(number: "1", text: "Go to Settings > General > Keyboard > Keyboards")
+                            InstructionStep(number: "2", text: "Tap 'Add New Keyboard' and select 'CodersKey'")
+                            InstructionStep(number: "3", text: "Tap on 'CodersKey' and enable 'Allow Full Access'")
+                            InstructionStep(number: "4", text: "Switch to the keyboard by tapping the globe icon")
+                            InstructionStep(number: "5", text: "Long press the last key on the third row (.) to select other keys (; or ,)")
+                        }
+                    }
+                    .padding(20)
+                    .background(Color(UIColor.secondarySystemGroupedBackground))
+                    .cornerRadius(24)
+                    .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 5)
+                    .padding(.horizontal)
+                    
+                    // Action Links
+                    VStack(spacing: 16) {
+                        MenuLink(title: "About Us", url: "https://www.nerdystuff.xyz")
+                        MenuLink(title: "Contact", url: "https://www.nerdystuff.xyz/pages/contact-us")
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 20)
                 }
+                .frame(maxWidth: 500) // Constrain width for larger screens
             }
             .navigationBarHidden(true)
         }
