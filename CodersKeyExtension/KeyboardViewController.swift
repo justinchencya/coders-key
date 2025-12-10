@@ -24,8 +24,13 @@ class KeyboardViewController: UIInputViewController {
         if !isInitialized {
             setupKeyboardView()
             isInitialized = true
+            isInitialized = true
             isKeyboardReady = true
         }
+        
+        // Force layout pass to ensure safe area insets are calculated before visibility to prevent flashing
+        self.view.layoutIfNeeded()
+        
         // No additional state changes to prevent flashing
     }
     
@@ -48,16 +53,17 @@ class KeyboardViewController: UIInputViewController {
         guard keyboardView == nil else { return }
         
         // Create keyboard view without forcing layout operations
-        keyboardView = KeyboardView(keyboardViewController: self)
+        keyboardView = KeyboardView(keyboardViewController: self, needsGlobeKey: self.needsInputModeSwitchKey)
         view.addSubview(keyboardView)
         keyboardView.translatesAutoresizingMaskIntoConstraints = false
         
-        // Set up constraints to fill the entire view
+        // Set up constraints to fill the view, respecting safe area to avoid system bar overlap
         NSLayoutConstraint.activate([
             keyboardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             keyboardView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             keyboardView.topAnchor.constraint(equalTo: view.topAnchor),
-            keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            keyboardView.heightAnchor.constraint(equalToConstant: 310)
         ])
         
         // Let the system handle layout naturally - no forced layout calls
@@ -166,5 +172,9 @@ extension KeyboardViewController: KeyboardViewDelegate {
     func moveCursor(offset: Int) {
         guard isKeyboardReady else { return }
         textDocumentProxy.adjustTextPosition(byCharacterOffset: offset)
+    }
+    
+    override func dismissKeyboard() {
+        super.dismissKeyboard()
     }
 }
