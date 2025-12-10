@@ -184,8 +184,10 @@ class KeyboardView: UIView {
                 rowStack.addArrangedSubview(button)
             }
             
-            // Add backspace to the third alphabet row
-            if rowIndex == 2 {
+            // Add right-side elements for appropriate rows
+            if rowIndex == 1 { // Second row (a-l) - add right spacer to center the row
+                rowStack.addArrangedSubview(createSpacer(width: 20))
+            } else if rowIndex == 2 { // Third row (z-m)
                 backspaceButton = createStandardButton(text: "⌫", color: getCurrentColors().special, action: #selector(backspacePressed))
                 backspaceButton?.titleLabel?.font = UIFont.systemFont(ofSize: 22)
                 backspaceButton?.widthAnchor.constraint(greaterThanOrEqualToConstant: 60).isActive = true
