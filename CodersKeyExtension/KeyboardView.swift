@@ -274,22 +274,9 @@ class KeyboardView: UIView {
             bottomActionSection.addArrangedSubview(hideBtn)
         }
         
-        // Set constraints
-        // If globe is present, space takes remaining width after fixed buttons
-        // If no globe, we want specific proportions
-        
-        // We'll trust the stack view's fillProportionally or use width constraints to guide it
-        
-        // We'll trust the stack view's fillProportionally or use width constraints to guide it
-        
-        // Ensure Space, Return, and CursorStack have equal widths (1:1:1 ratio)
-        // Space = Return
+        // Set constraints - ensure Space, Return, and CursorStack have equal widths (1:1:1 ratio)
         spaceButton?.widthAnchor.constraint(equalTo: returnButton!.widthAnchor).isActive = true
-        
-        // CursorStack = Return
         cursorStack.widthAnchor.constraint(equalTo: returnButton!.widthAnchor).isActive = true
-        
-        // If globe is present, we might want to ensure it doesn't get too small, handled by width constraint above
         
         // Set proper height constraint for bottom row
         bottomActionSection.heightAnchor.constraint(equalToConstant: 48).isActive = true
@@ -312,8 +299,6 @@ class KeyboardView: UIView {
             return colors.dotKey
         case "&", "|", ";", ":":
             return colors.punctuation
-        case "_":
-            return colors.underscore
         default:
             return colors.punctuation
         }
@@ -702,11 +687,6 @@ class KeyboardView: UIView {
         }
     }
     
-    // MARK: - Visual Feedback (Using Built-in UIButton Behavior)
-    // Removed custom touch event handlers - using built-in button visual feedback
-    
-    
-    
     private func registerForTraitChangeNotifications() {
         // Use modern trait change registration on iOS 17+, fallback to traitCollectionDidChange on older versions
         if #available(iOS 17.0, *) {
@@ -729,10 +709,6 @@ class KeyboardView: UIView {
         if traitCollection.userInterfaceStyle != previousTraitCollection?.userInterfaceStyle {
             updateKeyboardColorsForCurrentAppearance()
         }
-    }
-    
-    private func updateColorsForCurrentTraitCollection() {
-        colors = KeyColors(userInterfaceStyle: traitCollection.userInterfaceStyle)
     }
     
     private func updateKeyboardColorsForCurrentAppearance() {
@@ -787,7 +763,6 @@ private struct KeyColors {
     let bracket: UIColor
     let punctuation: UIColor
     let quote: UIColor
-    let underscore: UIColor
     let dotKey: UIColor
     let special: UIColor
     let shiftActive: UIColor
@@ -800,7 +775,6 @@ private struct KeyColors {
             bracket = .systemBlue
             punctuation = .systemPurple
             quote = .systemYellow
-            underscore = .systemGreen
             dotKey = .systemTeal
             special = .systemGray5
             shiftActive = .systemBlue
@@ -811,7 +785,6 @@ private struct KeyColors {
             bracket = .systemBlue
             punctuation = .systemPurple
             quote = .systemYellow
-            underscore = .systemGreen
             dotKey = .systemTeal
             special = .systemGray3
             shiftActive = .systemBlue

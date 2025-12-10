@@ -6,8 +6,6 @@ class KeyboardViewController: UIInputViewController {
     private var isKeyboardReady = false
     private var isInitialized = false
     
-
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupKeyboardView()
@@ -23,7 +21,6 @@ class KeyboardViewController: UIInputViewController {
         // Only setup if not already initialized - prevents recreation during switching
         if !isInitialized {
             setupKeyboardView()
-            isInitialized = true
             isInitialized = true
             isKeyboardReady = true
         }
@@ -122,13 +119,8 @@ class KeyboardViewController: UIInputViewController {
     // MARK: - Trait Collection Handling
     
     private func registerForTraitChanges() {
-        if #available(iOS 17.0, *) {
-            // Use modern trait change registration APIs
-            registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: KeyboardViewController, previousTraitCollection: UITraitCollection) in
-                // The KeyboardView will handle its own color updates via modern trait change APIs
-                // No additional action needed here - the KeyboardView has its own trait change registration
-            }
-        }
+        // KeyboardView handles its own trait change registration
+        // No action needed here
     }
     
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -138,13 +130,7 @@ class KeyboardViewController: UIInputViewController {
         } else {
             super.traitCollectionDidChange(previousTraitCollection)
         }
-        
-        // If the keyboard view exists and the user interface style changed,
-        // ensure it's properly updated (for iOS 16 and below)
-        if keyboardView != nil && traitCollection.userInterfaceStyle != previousTraitCollection?.userInterfaceStyle {
-            // The KeyboardView will handle its own color updates via traitCollectionDidChange
-            // No additional action needed here
-        }
+        // KeyboardView handles its own color updates via traitCollectionDidChange
     }
 }
 
